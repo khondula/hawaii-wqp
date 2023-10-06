@@ -17,6 +17,8 @@ wq_params <- unique(wqp_join$CharacteristicName)
 # wq_summary <- readr::read_csv('HawaiiWQPdata/data/wqp_join_summary.csv')
 wqp_join_summary_byStation <- readr::read_csv('data/wqp_summary_by_station.csv')
   
+# param_groups <- readr::read_csv('parameters.csv')
+
 # test_subset <- wqp_join %>% dplyr::filter(CharacteristicName %in% "Atrazine")
 # summary_subset <- wqp_join_summary_byStation %>% dplyr::filter(CharacteristicName %in% "Atrazine")
 # 
