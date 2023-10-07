@@ -15,6 +15,7 @@ library(htmltools)
 
 wqp_data <- readr::read_csv('data/wqp_join.csv')
 wq_params <- unique(wqp_data$CharacteristicName)
+# param_groups <- readr::read_csv('HawaiiWQPdata/data/parameters.csv')
 param_groups <- readr::read_csv('data/parameters.csv')
 
 param_list <- param_groups %>% 
@@ -25,12 +26,13 @@ param_list <- param_groups %>%
 
 param_categories <- param_list %>% purrr::map_chr(~unique(.x[['category']]))
 names(param_list) <- param_categories
+# param_categories
 
 params_choices <- param_list %>% 
   purrr::map(~dplyr::select(.x, CommonName, CharacteristicName)) %>%
   purrr::map(~tibble::deframe(.x))
-
-params_choices$Pharmaceuticals
+# names(params_choices)
+# params_choices$PPCPs
 
 # Define UI for application that draws a histogram
 fluidPage(
@@ -41,17 +43,22 @@ fluidPage(
     # Sidebarwith 
     sidebarLayout(
       sidebarPanel(
-        h5("663 Parameters in total from 197 Monitoring locations"),
+        h5("663 Parameters tested for from 197 Monitoring locations"),
+        h5("158 Parameters detected across 194 Monitoring locations"),
+        h5('Map shows detections and data tab is all data for selected parameter(s)'),
         shiny::selectizeInput("parameters",
                               "Parameters:",
-                              selected = "Copper",
+                              selected = "p,p'-DDT",
                               choices = list(
-                                Pharmaceuticals = params_choices$Pharmaceuticals,
-                                Herbicide = params_choices$Herbicide,
-                                Metals = params_choices$Metals,
+                                Pharmaceuticals = params_choices$PPCPs,
+                                PAHs = params_choices$PAH,
+                                Industrial = params_choices$industrial,
+                                Pesticides = params_choices$pesticide,
+                                Metals = params_choices$metals,
                                 PCBs = params_choices$PCBs,
-                                Insecticide = params_choices$insecticide,
-                                uncategorized = params_choices$unsure
+                                plasticiser = params_choices$plasticiser,
+                                other = params_choices$other,
+                                NotDectected = params_choices$`NA, non-detect`
                               ),
                               multiple = TRUE),
         br(),
@@ -66,6 +73,7 @@ fluidPage(
         tabsetPanel(
           tabPanel(title = 'map', leafletOutput("map", height = 800)),
           tabPanel(title = 'data', dataTableOutput("table"))
+          
         ))
     )
 )

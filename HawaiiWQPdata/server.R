@@ -15,10 +15,11 @@ library(glue)
 wqp_join <- readr::read_csv('data/wqp_join.csv')
 wq_params <- unique(wqp_join$CharacteristicName)
 # wq_summary <- readr::read_csv('HawaiiWQPdata/data/wqp_join_summary.csv')
+# wqp_join_summary_byStation <- readr::read_csv('HawaiiWQPdata/data/wqp_summary_by_station.csv')
 wqp_join_summary_byStation <- readr::read_csv('data/wqp_summary_by_station.csv')
   
 # param_groups <- readr::read_csv('parameters.csv')
-
+# param_groups
 # test_subset <- wqp_join %>% dplyr::filter(CharacteristicName %in% "Atrazine")
 # summary_subset <- wqp_join_summary_byStation %>% dplyr::filter(CharacteristicName %in% "Atrazine")
 # 
@@ -64,12 +65,18 @@ function(input, output, session) {
     
     my_pts %>%
       leaflet() %>%
-      addProviderTiles(providers$Esri.WorldImagery) %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = 'esri world imagery') %>%
+      addTiles(group = 'OSM') %>%
       addCircleMarkers(color = ~pal(category), 
                        stroke = TRUE,
                        opacity = 1,
                        fillOpacity = 0.75,
-                       popup = ~description)
+                       popup = ~description,
+                       group = 'sample locations') %>%
+      addLayersControl(baseGroups = c('esri world imagery', 'OSM'),
+                       overlayGroups = 'sample locations',
+                       options = layersControlOptions(collapsed = FALSE))
   })
+  
 
 }

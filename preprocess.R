@@ -49,7 +49,31 @@ wqp_join_summary_byYear <- wqp_join %>%
   dplyr::mutate(dateparse = lubridate::mdy(ActivityStartDate)) %>%
   dplyr::mutate(year = lubridate::year(dateparse)) %>%
   dplyr::mutate(detected = !ResultDetectionConditionText %in% c("Not Detected", "*Non-detect")) %>%
-  dplyr::group_by(MonitoringLocationIdentifier,
+  dplyr::group_by( output$map <- renderLeaflet({
+    
+    summary_subset <- wqp_join_summary_byStation %>% 
+      dplyr::filter(CharacteristicName %in% input$parameters) %>%
+      dplyr::mutate(description = glue::glue("<b>{MonitoringLocationName}</b>:\n {CharacteristicName} was
+                                             {category} in {n_samps} total samples\n
+                                             between {min_year} and {max_year}"))
+    
+    my_pts <- summary_subset %>% 
+      sf::st_as_sf(coords = c('Lon', 'Lat'), crs = 4269)
+    
+    my_pts %>%
+      leaflet() %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = 'esri world imagery') %>%
+      addTiles(group = 'OSM') %>%
+      addCircleMarkers(color = ~pal(category), 
+                       stroke = TRUE,
+                       opacity = 1,
+                       fillOpacity = 0.75,
+                       popup = ~description,
+                       group = 'sample locations') %>%
+      addLayersControl(baseGroups = c('esri world imagery', 'OSM'),
+                       overlayGroups = 'sample locations',
+                       options = layersControlOptions(collapsed = FALSE))
+  }),
                   MonitoringLocationName,
                   CharacteristicName,
                   year, 
@@ -71,3 +95,23 @@ wqp_join_summary_byStation <- wqp_join_summary_byYear %>%
 
 wqp_join_summary_byStation %>% readr::write_csv('HawaiiWQPdata/data/wqp_summary_by_station.csv')
 wqp_join_summary %>% readr::write_csv('HawaiiWQPdata/data/wqp_join_summary.csv')
+# 
+# wqp_join_summary_byStation %>%
+#   dplyr::select(CharacteristicName) %>%
+#   distinct() %>%
+#   readr::write_csv('parameters.csv')
+
+# which chemicals are in any sites
+
+wqp_join_summary_byStation %>%
+  dplyr::select(CharacteristicName, category) %>%
+  distinct() %>% dplyr::filter(category %in% c('variable', 'detect')) %>% arrange(CharacteristicName) %>% View()
+
+
+wqp_join_summary_byStation %>%
+  dplyr::select(MonitoringLocationName, Lat, Lon, MonitoringLocationIdentifier) %>%
+  distinct() %>%
+  sf::st_as_sf(coords = c("Lon", "Lat")) %>%
+  leaflet() %>%
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addMarkers(popup = ~MonitoringLocationName)
