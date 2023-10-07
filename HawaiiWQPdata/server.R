@@ -13,11 +13,21 @@ library(leaflet)
 library(glue)
 library(sf)
 
+# wqp_join <- readr::read_csv('HawaiiWQPdata/data/wqp_join.csv')
 wqp_join <- readr::read_csv('data/wqp_join.csv')
 wq_params <- unique(wqp_join$CharacteristicName)
 # wq_summary <- readr::read_csv('HawaiiWQPdata/data/wqp_join_summary.csv')
 # wqp_join_summary_byStation <- readr::read_csv('HawaiiWQPdata/data/wqp_summary_by_station.csv')
 wqp_join_summary_byStation <- readr::read_csv('data/wqp_summary_by_station.csv')
+
+stations_sf <- wqp_join_summary_byStation %>% 
+  dplyr::select(MonitoringLocationIdentifier, MonitoringLocationName, Lat, Lon) %>%
+  distinct() %>% 
+  dplyr::mutate(description = glue::glue("<b>{MonitoringLocationName}</b> <br> ({MonitoringLocationIdentifier})")) %>%
+  sf::st_as_sf(coords = c('Lon', 'Lat'), crs = 4269)
+
+station_ids <- unique(stations_sf$MonitoringLocationIdentifier)
+  
 
 coffee_sf <- sf::st_read('data/ag2020_Coffee.kml')
 macnut_sf <- sf::st_read('data/ag2020_MacadamiaNuts.kml')
@@ -98,6 +108,43 @@ function(input, output, session) {
     param_subset()
   })
   
+  station_subset <- reactive({
+    my_station_data <- dplyr::filter(wqp_join, MonitoringLocationIdentifier %in% input$map2_marker_click$id)
+    my_station_data
+    
+  })
+  
+  observeEvent(input$map2_marker_click, { 
+    p <- input$mymap_marker_click  # typo was on this line
+    print(p)
+  })
+  
+  output$station_name <- renderText({
+    validate(
+      need(input$map2_marker_click$id, "Please select a station marker")
+    )
+    station_name <- wqp_join_summary_byStation %>% 
+      dplyr::filter(MonitoringLocationIdentifier == input$map2_marker_click$id) %>% 
+      dplyr::pull(MonitoringLocationName) %>% unique()
+    station_name
+  })
+
+  output$station_summary <- renderTable({
+    validate(
+      need(input$map2_marker_click$id, "Please select a station marker")
+    )
+    
+    wqp_join_summary_byStation %>% 
+      dplyr::filter(MonitoringLocationIdentifier == input$map2_marker_click$id) %>% 
+      dplyr::group_by(category, min_year) %>% 
+      summarise(parameters = glue::glue_collapse(CharacteristicName, sep = ", ")) %>%
+      dplyr::mutate(min_year = as.integer(min_year))
+  })
+  
+  output$table2 <- renderDataTable({
+    station_subset()
+  })
+  
   output$map <- renderLeaflet({
     
     wbd_sf %>%
@@ -146,6 +193,21 @@ function(input, output, session) {
                          options = layersControlOptions(collapsed = TRUE))
   })
   
-
+  output$map2 <- renderLeaflet({
+    
+    stations_sf %>%
+      leaflet() %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = 'esri world imagery') %>%
+      addTiles(group = 'OSM') %>%
+      addMarkers(popup = ~description, 
+                 layerId = ~MonitoringLocationIdentifier,
+                 clusterOptions = markerClusterOptions()) %>%
+      addPolygons(data = wbd_sf, opacity = 1, color = 'blue', weight = 1, 
+                  group = 'HUC 12s',
+                  fillOpacity = 0.1, popup = ~glue::glue('{name} ({hutype}) {huc12}')) %>%
+      addLayersControl(baseGroups = c('esri world imagery', 'OSM'),
+                       overlayGroups = c('HUC 12s'),
+                       options = layersControlOptions(collapsed = TRUE))
+  })
 
 }

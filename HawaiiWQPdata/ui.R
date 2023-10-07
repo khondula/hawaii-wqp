@@ -6,7 +6,7 @@
 #
 #    http://shiny.rstudio.com/
 #
-
+library(shinydashboard)
 library(dplyr)
 library(leaflet)
 library(glue)
@@ -44,7 +44,8 @@ fluidPage(
     # Application title
     titlePanel("Hawaii Island Water Quality Portal data"),
 
-    # Sidebarwith 
+    tabsetPanel(
+      tabPanel("By Parameter", fluid = TRUE,
     sidebarLayout(
       sidebarPanel(
         h5("663 Parameters tested for from 197 Monitoring locations"),
@@ -79,5 +80,23 @@ fluidPage(
           tabPanel(title = 'data', dataTableOutput("table"))
           
         ))
-    )
-)
+    )),
+    tabPanel("By Location", fluid = TRUE,
+             sidebarLayout(
+               sidebarPanel(
+                 selectizeInput('station',
+                                label = 'Select station here or click:',
+                                choices = station_ids,
+                                selected = 'USGS-193938156005601'),
+                 h5("click on location marker to see station name"),
+                 textOutput("station_name"),
+                 tableOutput('station_summary')
+               ),
+               mainPanel(
+                 tabsetPanel(
+                   tabPanel(title = 'map', 
+                            leafletOutput("map2", height = 800)),
+                   tabPanel(title = 'data', dataTableOutput("table2"))
+               )
+             )))
+))
