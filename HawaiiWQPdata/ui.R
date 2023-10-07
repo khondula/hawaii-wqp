@@ -34,6 +34,10 @@ params_choices <- param_list %>%
 # names(params_choices)
 # params_choices$PPCPs
 
+coffee_sf <- sf::st_read('data/ag2020_Coffee.kml')
+macnut_sf <- sf::st_read('data/ag2020_MacadamiaNuts.kml')
+tropfruit_sf <- sf::st_read('data/ag2020_TropicalFruits.kml')
+
 # Define UI for application that draws a histogram
 fluidPage(
 
